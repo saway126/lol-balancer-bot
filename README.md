@@ -1,50 +1,74 @@
-MMR Discord Bot (내전 랭킹 봇)
+# Discord MMR Bot (PoroBot)
 
-간단한 스타터 템플릿입니다. 슬래시 명령과 접두사 명령(동시 지원), SQLite DB, ELO 기반 MMR 업데이트를 포함합니다.
+이 프로젝트는 디스코드 내전 및 MMR 랭킹 관리를 위한 봇입니다. Python과 `discord.py`를 기반으로 하며, SQLite를 사용하여 데이터를 저장합니다.
 
-설치
-1. 가상환경 생성(선택)
-2. 의존성 설치:
+> [!WARNING]
+> **주의**: 현재 폴더에 있는 코드는 스크린샷에 보이는 기능 중 일부(`balance`, `history`)가 포함되어 있지 않은 버전으로 보입니다. 아래 문서는 **현재 폴더에 존재하는 코드**를 기준으로 작성되었습니다.
 
-```powershell
-python -m venv .venv; .\.venv\Scripts\Activate.ps1; pip install -r requirements.txt
+## 📂 프로젝트 구조
+
+```
+bot/
+├── bot.py              # 봇의 진입점 (Entry Point). 봇 실행 및 초기화 담당.
+├── commands.py         # 명령어 처리 로직 (랭킹, 팀등록, 기록 등).
+├── db.py               # 데이터베이스(SQLite) 연동 및 스키마 정의.
+├── mmr.py              # MMR 계산 로직 (ELO 시스템 등).
+├── run_bot.ps1         # 봇 실행을 위한 PowerShell 스크립트.
+├── install_deps.ps1    # 의존성 설치 스크립트.
+└── mmr_bot.db          # (자동생성) 봇 데이터가 저장되는 SQLite 데이터베이스 파일.
 ```
 
-실행
-1. `DISCORD_TOKEN` 환경변수에 봇 토큰을 설정합니다.
-```powershell
-$env:DISCORD_TOKEN = 'your_token_here'
-python bot.py
-```
+## 🚀 설치 및 실행 방법
 
-파일
-- `bot.py`: 봇 진입점 및 이벤트 루프
-- `db.py`: SQLite 도우미 및 스키마
-- `mmr.py`: ELO/MMR 계산 로직
-- `commands.py`: 슬래시/접두사 명령 구현
+### 1. 사전 준비
+- Python 3.8 이상이 설치되어 있어야 합니다.
+- 디스코드 개발자 포털에서 봇 토큰을 발급받아야 합니다.
+- **Privileged Intents** 설정: 봇 설정에서 `Message Content Intent`와 `Server Members Intent`를 켜야 원활하게 작동합니다.
 
-주의
-- 이 코드는 예제용이며 프로덕션 전에는 에러 처리, 동시성, 인증/권한 체크가 필요합니다.
-
-Quick start (Windows PowerShell):
-
-1) Install dependencies (from project root):
-
+### 2. 설치
+프로젝트 폴더에서 PowerShell을 열고 다음 명령어로 의존성을 설치합니다.
 ```powershell
 .\install_deps.ps1
+# 또는 수동으로: pip install -r requirements.txt
 ```
 
-2) Initialize DB (creates mmr_test.db):
-
+### 3. 실행
+`DISCORD_TOKEN` 환경 변수를 설정하고 봇을 실행합니다.
 ```powershell
-python init_db_test.py
-```
-
-3) Run the bot (set your token first):
-
-```powershell
-$env:DISCORD_TOKEN = "your_token_here"
+$env:DISCORD_TOKEN = "여기에_토큰_입력"
 python bot.py
+# 또는 제공된 스크립트 사용: .\run_bot.ps1
 ```
 
-If `aiosqlite` import still fails, ensure `python --version` and the interpreter used to install packages are the same.
+## 💬 명령어 사용법
+
+이 봇은 **슬래시 커맨드(/)** 와 **접두사 커맨드(!)** 를 모두 지원합니다.
+
+### 1. 랭킹 확인
+현재 등록된 플레이어들의 MMR 랭킹(Top 10)을 보여줍니다.
+- **사용법**: `/랭킹` 또는 `!랭킹`
+- **출력**: 순위, 이름, 티어(SS~C), MMR, 전적, 승률
+
+### 2. 팀 등록 (관리자 전용)
+새로운 팀을 등록하고 초기 멤버를 설정합니다.
+- **사용법 (슬래시)**: `/팀등록 team_name:팀명 member1:@멘션 ... [seed:초기MMR]`
+- **사용법 (접두사)**: `!팀등록 팀명 @멘션1 @멘션2 ...`
+- **예시**: `/팀등록 team_name:TeamA member1:@User1 member2:@User2`
+
+### 3. 경기 기록 (관리자 전용)
+내전 결과를 기록하고 MMR을 업데이트합니다. (현재 코드는 승리 +25점, 패배 -25점 고정)
+- **사용법 (슬래시)**: `/기록 team_a:ID목록 team_b:ID목록 winner:A또는B`
+- **사용법 (접두사)**: `!기록 "ID1 ID2" "ID3 ID4" A`
+- **주의**: ID목록은 띄어쓰기로 구분된 디스코드 ID들입니다.
+
+### 4. 디버그 (관리자 전용)
+봇의 상태와 데이터베이스 연결 상태를 확인합니다.
+- **사용법**: `/디버그`
+
+## ⚠️ 누락된 기능 (스크린샷 vs 코드)
+사용자가 제공한 스크린샷에는 존재하지만, **현재 코드에는 구현되어 있지 않은** 기능들입니다:
+- **`/balance`**: 플레이어들을 MMR 기반으로 균형 있게 팀을 나누는 기능.
+- **`/history`**: 특정 플레이어의 최근 전적을 조회하는 기능.
+- **ELO 계산 적용**: `mmr.py`에 ELO 로직이 있지만, 실제 `record` 명령은 단순 +/- 25점만 사용하고 있습니다.
+
+이 기능들을 사용하려면 코드를 업데이트하거나 누락된 파일을 찾아야 합니다.
